@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Excel Data</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    
+    <style>
+        body {
+            background-color: #f4f3f8; /* Soft pastel background */
+            color: #333; /* Darker text for contrast against a lighter background */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Modern font */
+        }
+        .container {
+            background-color: #ffffff; /* Clean white for the container */
+            padding: 20px;
+            border-radius: 12px; /* Rounded corners for modern feel */
+            margin-top: 20px;
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.1); /* Soft shadow for depth */
+            
+            margin: auto; /* Center the container */
+        }
+        .title-3d {
+            text-align: center;
+            color: #6d6875; /* Soft purple for a modern look */
+            text-shadow: 1px 1px 2px #aaa; /* Softer 3D effect */
+            margin-bottom: 30px;
+        }
+        .table-responsive {
+            display: block;
+            width: 100%;
+            overflow-x: auto; /* Allows horizontal scrolling */
+            overflow-y: auto; /* Allows vertical scrolling */
+            max-height: 60vh; /* 60% of the viewport height */
+            border: 1px solid #ddd; /* Light border for definition */
+            border-radius: 8px; /* Consistent rounded corners */
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #eae0f8; /* Soft purple for separation */
+        }
+        th {
+            position: sticky;
+            top: 0;
+            background-color: #b5838d; /* Pastel red for the header */
+            color: white;
+            z-index: 2;
+        }
+        .first-column {
+            position: sticky;
+            left: 0;
+            background-color: #634496; /* Consistent with the header color */
+            color: white;
+            z-index: 1;
+        }
+        .sticky-top-left {
+            position: sticky;
+            left: 0;
+            top: 0; /* Ensures it sticks at the top as well */
+            background-color: #b5838d; /* Or any desired color */
+            z-index: 3; /* Higher than other sticky elements */
+        }
+
+        tr:nth-child(even) {background-color: #d0b0f1;} /* Light purple for even rows */
+        .btn-primary {
+            background-color: #634496; /* Adjust button color to match theme */
+            border-color: #634496;
+        }
+        .btn-primary:hover {
+            background-color: #7c3791; /* Darker shade for hover */
+            border-color: #7c3791;
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top: 4px solid #634496; /* Use your primary color here */
+            width: 40px;
+            height: 40px;
+            animation: spin 2s linear infinite;
+            display: none; /* Hidden by default */
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            margin-left: -20px; /* Half of width */
+            margin-top: -20px; /* Half of height */
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .back-btn {
+            display: block;
+            width: max-content;
+            margin: 20px auto;
+        }                
+    </style>
+</head>
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+    <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="toast-header">
+        <strong class="me-auto" id="toastHeader">Bootstrap</strong>
+        <small>Just now</small>
+        <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+      <div class="toast-body" id="toastBody">
+        See? Just like this.
+      </div>
+    </div>
+  </div>
+  
+<body>
+<div class="container">
+    <h1 class="title-3d"> {{ filename.split('.')[0] }}</h1>
+    <input type="text" id="searchInput" placeholder="Search..." class="form-control mb-3">
+    <form id="excelDataForm">
+        <div contenteditable="true" class="table-responsive">
+            {{ table|safe }}
+        </div>
+        <button type="button" onclick="updateExcel()" class="btn btn-primary mt-3">Save Changes</button>
+        <button type="button" onclick="addNewRow()" class="btn btn-secondary mt-3">Add New Row</button>
+    </form>
+</div>
+<a href="/" class="btn btn-outline-dark back-btn">Back to Home</a>
+
+<div class="spinner" id="loadingSpinner"></div>
+
+<script>
+function collectTableData() {
+    const data = [];
+    document.querySelectorAll('#excelTable tbody tr').forEach((row, rowIndex) => {
+        row.querySelectorAll('td').forEach((cell, cellIndex) => {
+            
+            let input = cell.querySelector('input');
+            let select = cell.querySelector('select');
+            let value = input ? input.value : select ? select.options[select.selectedIndex].value : cell.innerText.trim();
+
+            // Try to convert text to a number if it's purely numerical
+            if (!isNaN(value) && value !== '') {
+                // Convert to float or integer, depending on the presence of a decimal point
+                value = value.includes('.') ? parseFloat(value) : parseInt(value, 10);
+            }
+
+            data.push({
+                row: rowIndex,
+                col: cellIndex,
+                value: value // Now 'value' could be a string or a number
+            });
+        });
+    });
+    return data;
+}
+
+
+function updateExcel() {
+    const department = "{{ department }}";
+    // Ensure the filename matches the expected structure in the backend
+    let filename = "{{ filename }}";
+    if (department !== 'BDM' && department !='Marketing') {
+        filename = `${department}.xlsx`; // Adjust for non-BDM departments
+    }
+
+    const tableData = collectTableData();
+
+    fetch(`/update_excel/${department}/${filename}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({tableData}),
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert('Excel file updated successfully');
+    })
+    .catch((error) => {
+        console.error('Error:', error);
+        alert('Failed to update Excel file');
+    });
+}
+
+document.addEventListener('DOMContentLoaded', (event) => {
+    const table = document.getElementById('excelTable');
+    if (table) {
+        table.addEventListener('click', function(e) {
+            const target = e.target;
+            if (target.matches('.non-editable') || target.getAttribute('contenteditable') === 'false') {
+                e.preventDefault(); // Prevent default action
+                return false; // Stop further handling
+            }
+        });
+
+        table.addEventListener('keydown', function(e) {
+            const target = e.target;
+            if (target.matches('.non-editable') || target.getAttribute('contenteditable') === 'false') {
+                e.preventDefault(); // Prevent typing
+                return false; // Stop further handling
+            }
+        });
+    }
+});
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Function to add the first-column class and target the top-left cell
+        const applyColumnClasses = () => {
+            document.querySelectorAll("table tbody tr").forEach(function(row) {
+                var firstCell = row.cells[0];
+                if (firstCell) {
+                    firstCell.classList.add("first-column");
+                }
+            });
+            // Target the top-left cell specifically
+            var topLeftCell = document.querySelector("table th:first-child");
+            if (topLeftCell) {
+                topLeftCell.classList.add("sticky-top-left");
+            }
+        };
+    
+        // Function to filter/search the table rows based on input
+        const searchTable = () => {
+            let input, filter, table, tr, td, i, j, txtValue;
+            input = document.getElementById("searchInput");
+            filter = input.value.toUpperCase();
+            table = document.querySelector("table");
+            tr = table.getElementsByTagName("tr");
+
+            // Loop through all table rows, except for the header row
+            for (i = 1; i < tr.length; i++) {
+                tr[i].style.display = "none";  // Start by hiding the row, then search for the text
+
+                td = tr[i].getElementsByTagName("td");
+                for (j = 0; j < td.length; j++) { // Check each cell in the row
+                    if (td[j]) {
+                        txtValue = td[j].textContent || td[j].innerText;
+                        if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                            tr[i].style.display = "";  // Show the row if there is a match
+                            break;  // Found a match, no need to check remaining cells in the row
+                        }
+                    }
+                }
+            }
+        };
+
+        // Assign the searchTable function to the search input's onkeyup event
+        const searchInput = document.getElementById("searchInput");
+        if (searchInput) {
+            searchInput.onkeyup = searchTable;
+        }
+    
+        // Apply column classes
+        applyColumnClasses();
+    });
+    </script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const table = document.getElementById('excelTable');
+        if (table) {
+            const rows = table.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                // Dropdown for 'Shortlist', assuming it's the 5th column
+                updateCellWithDropdown(row, 4, ['True', 'False']);
+                const statusOptions = [
+                'None',    
+                'first research/ in touch with association',
+                'not interested',
+                'interesting for the future',
+                'contact with local scientist',
+                'expression of interest/ preliminary application',
+                'maastricht bid in process',
+                'bid submitted',
+                'site visit',
+                'bid lost',
+                'bid won: contract not signed',
+                'bid won: contract signed'
+                ];
+                const managerOptions = [
+                    'None',
+                    'Anna',
+                    'Tom',
+                    'Other'
+                ];
+                const initiatiefOptions = [
+                    'None',
+                    'MCB',
+                    'MECC',
+                    'Other'
+                ];
+
+                updateCellWithDropdown(row, 14, initiatiefOptions);
+
+                updateCellWithDropdown(row, 17, managerOptions);
+
+                // Dropdown for 'Status', assuming it's the 10th column
+                updateCellWithDropdown(row, 10, statusOptions);
+                
+                // Numeric input for 'Duration of Event', assuming it's the 6th column
+                updateCellWithInput(row, 5, 'number', 1, 100); 
+                
+                // Numeric input for 'Average Number of Delegates', assuming it's the 7th column
+                updateCellWithInput(row, 6, 'number', 1, 20000); 
+                
+                // Date input for 'Bidding Deadline', assuming it's the 8th column
+                updateCellWithInput(row, 9, 'date'); 
+
+                //Numeric input for 'Spinoff', assuming it's the 7th column
+                updateCellWithInput(row, 7, 'number', 1, 1000000000);
+                //Numeric input for 'Previous Bids', assuming it's the 10th column
+                updateCellWithInput(row, 11, 'number', 1, 10);
+
+            });
+        }
+    });
+    function updateCellWithDropdown(row, cellIndex, options) {
+    const cell = row.cells[cellIndex];
+    let currentValue = cell.innerText.trim();
+
+    // Create dropdown HTML with options
+    let dropdownHTML = `<select>`;
+    options.forEach(option => {
+        let isSelected = currentValue === option ? 'selected' : '';
+        dropdownHTML += `<option value="${option}" ${isSelected}>${option}</option>`;
+    });
+    dropdownHTML += `</select>`;
+
+    // Replace cell content with the dropdown
+    cell.innerHTML = dropdownHTML;
+}
+
+
+    
+    function updateCellWithInput(row, cellIndex, type, min = null, max = null) {
+        const cell = row.cells[cellIndex];
+        if (cell) {
+            let currentValue = cell.innerText.trim();
+            let inputHTML = `<input type="${type}" value="${currentValue}"`;
+            if (type === 'number') {
+                if (min !== null) inputHTML += ` min="${min}"`;
+                if (max !== null) inputHTML += ` max="${max}"`;
+            }
+            inputHTML += `>`;
+            cell.innerHTML = inputHTML;
+        }
+    }
+    </script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const table = document.getElementById('excelTable');
+        if (table) {
+            const rows = table.querySelectorAll('tbody tr');
+            rows.forEach((row, rowIndex) => {
+                const similarityCellIndex = 8; // Adjust this index to match the "Similarity" column in your table
+                const similarityCell = row.cells[similarityCellIndex];
+                // Display current similarity score (if any) and the upload button
+                const currentScore = similarityCell.innerText.trim();
+                const scoreDisplay = currentScore ? `Current Score: ${currentScore}<br>` : '';
+                similarityCell.innerHTML = `
+                    ${scoreDisplay}
+                    <input type="file" id="file_${rowIndex}_${similarityCellIndex}" accept=".txt" style="display: none;">
+                    <button type="button" onclick="uploadFile(${rowIndex}, ${similarityCellIndex})">Upload Profile</button>
+                `;
+            });
+        }
+    });
+    function uploadFile(rowIndex, colIndex) {
+    const fileInput = document.getElementById(`file_${rowIndex}_${colIndex}`);
+    const spinner = document.getElementById('loadingSpinner'); // Get the spinner
+    fileInput.click(); // Trigger file input
+
+    fileInput.onchange = function() {
+        if (this.files && this.files[0]) {
+            const file = this.files[0];
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const filename = '{{ filename }}';
+            const department = '{{ department }}';
+            const uploadUrl = `/upload_org_profile/${department}/${filename}/${rowIndex}/${colIndex}`;
+
+            spinner.style.display = 'block'; // Show the spinner
+
+            fetch(uploadUrl, {
+                method: 'POST',
+                body: formData,
+            })
+            .then(response => response.json())
+            .then(data => {
+                spinner.style.display = 'none'; // Hide the spinner
+                if (data.status === "success") {
+                    // Use Bootstrap's modal or toast for a better visual message
+                    setTimeout(() => {
+                        showToast('Success', 'Similarity score updated successfully!','similarity_score:' + data.similarity_score.toFixed(2));
+                    }, 5000);
+                    
+                    // Update the cell directly with the new similarity score
+                    const table = document.getElementById('excelTable');
+                    if (table) {
+                        // Ensure rowIndex and colIndex are being referenced correctly.
+                        // It might be necessary to adjust the rowIndex if your table includes a header row or any other non-data rows above the data rows.
+                        const adjustedRowIndex = rowIndex + 1; // Adjust if necessary based on your table structure
+
+                        // Ensure we are targeting the right row and cell for the update
+                        if (adjustedRowIndex < table.rows.length) {
+                            const targetRow = table.rows[adjustedRowIndex];
+                            if (colIndex < targetRow.cells.length) {
+                                const cell = targetRow.cells[colIndex];
+                                // Update the cell with the new similarity score and reattach the upload button
+                                cell.innerHTML = `${data.similarity_score.toFixed(2)}
+                                    <br>
+                                    <input type="file" id="file_${rowIndex}_${colIndex}" accept=".txt" style="display: none;">
+                                    <button type="button" onclick="uploadFile(${rowIndex}, ${colIndex})">Upload Profile</button>`;
+                            }
+                        }
+                    }
+                } else {
+                    alert("Failed to update similarity score: " + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to upload file.');
+            });
+        }
+    };
+}
+function showToast(title, message) {
+  // Set the title and message of the toast
+  document.getElementById('toastHeader').textContent = title;
+  document.getElementById('toastBody').textContent = message;
+
+  // Initialize and show the toast
+  var toastEl = document.getElementById('liveToast');
+  var toast = new bootstrap.Toast(toastEl); // Bootstrap 5; for Bootstrap 4 use $('.toast').toast()
+  toast.show();
+}
+function addNewRow() {
+    const table = document.getElementById('excelTable');
+    const newRow = table.insertRow(-1); // Adds a new row at the end of the table
+    const numColumns = table.rows[0].cells.length; // Assumes the header row exists and has a complete set of columns
+
+    for (let i = 0; i < numColumns; i++) {
+        let newCell = newRow.insertCell(i);
+        let htmlContent = "";
+        // Determine the type of cell based on column index and set HTML accordingly
+        switch(i) {
+            case 4: // Assuming 4th index is for 'Shortlist' dropdown
+                htmlContent = `<select>
+                                  <option value="true">True</option>
+                                  <option value="false">False</option>
+                               </select>`;
+                break;
+            case 10: // Assuming 10th index is for 'Status' dropdown
+                htmlContent = statusDropdownHtml(); // Function call to generate HTML
+                break;
+            case 9: // Adjusted index for 'Bidding deadline' date input
+                htmlContent = `<input type="date">`;
+                break;
+            case 8: // Assuming 8th index is for 'Similarity'
+                htmlContent = `<input type="file" id="file_${table.rows.length - 2}_${i}" accept=".txt" style="display: none;">
+                               <button type="button" onclick="uploadFile(${table.rows.length - 2}, ${i})">Upload Profile</button>`;
+                break;
+            case 17:
+                htmlContent = statusDropdownHtmlforManager();
+                break;    
+            case 14:
+                htmlContent = statusDropdownHtmlforInitiatief();
+                break;    
+            default:
+                htmlContent = `<input type="text">`; // Default text input for other cells
+                break;
+        }
+        newCell.innerHTML = htmlContent;
+    }
+}
+
+// Helper function to create HTML for 'Status' dropdown
+function statusDropdownHtml() {
+    const options = [
+        'None','First research/ in touch with association', 'Not interested', 'Interesting for the future',
+        'Contact with local scientist', 'Expression of interest/ preliminary application',
+        'Maastricht bid in process', 'Bid submitted', 'Site visit', 'Bid lost',
+        'Bid won: contract not signed', 'Bid won: contract signed'
+    ];
+    let dropdownHtml = '<select>';
+    options.forEach(option => {
+        dropdownHtml += `<option value="${option.toLowerCase()}">${option}</option>`;
+    });
+    dropdownHtml += '</select>';
+    return dropdownHtml;
+}
+function statusDropdownHtmlforManager() {
+    const options = [
+    'None','Anna','Tom','Other'
+    ];
+    let dropdownHtml = '<select>';
+    options.forEach(option => {
+        dropdownHtml += `<option value="${option.toLowerCase()}">${option}</option>`;
+    });
+    dropdownHtml += '</select>';
+    return dropdownHtml;
+}
+function statusDropdownHtmlforInitiatief() {
+    const options = [
+    'None','MCB','MECC','Other'
+    ];
+    let dropdownHtml = '<select>';
+    options.forEach(option => {
+        dropdownHtml += `<option value="${option.toLowerCase()}">${option}</option>`;
+    });
+    dropdownHtml += '</select>';
+    return dropdownHtml;
+}
+
+</script>
+    
+    
+</body>
+</html>

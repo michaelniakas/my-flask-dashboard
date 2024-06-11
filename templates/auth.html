@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Access Required</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.4/css/all.css">
+    <style>
+        body {
+            background-color: #E0CBA4; /* Soft beige for a relaxing vibe */
+            padding-top: 20px;
+            color: #333; /* For readability */
+        }
+        .container {
+            background-color: #fff; /* Clean white for focus */
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Softer shadow for depth */
+            max-width: 400px;
+            margin: auto;
+            color: #333; /* Contrast against the light background */
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            margin-top: 10px;
+        }
+        input[type="password"]:focus {
+            border-color: #69ACDF; /* Serene blue for focus */
+            box-shadow: 0 0 8px #69ACDF;
+            transition: all 0.3s ease;
+        }
+        button[type="submit"] {
+            background-color: #C6C84F; /* Lively green for the button */
+            color: #fff;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button[type="submit"]:hover {
+            background-color: #F59C24; /* Warm orange for hover */
+        }
+        .error-message {
+            color: #E63312; /* Vibrant orange for error messages */
+        }
+        .modal-content {
+            background-color: #69ACDF; /* Serene blue for modal background */
+            color: #fff; /* White text for contrast */
+        }
+        .modal-footer .btn-secondary {
+            background-color: #E0CBA4; /* Soft beige */
+            color: #333; /* For contrast */
+        }
+        .modal-footer .btn-secondary:hover {
+            background-color: #C6C84F; /* Adjust for hover */
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1 class="text-center">Access Required for {{ department }}</h1>
+    {% for message in get_flashed_messages(category_filter=["error"]) %}
+        <p class="error-message">{{ message }}</p>
+    {% endfor %}
+    <form method="POST">
+        <label for="accessCode">Access Code:</label>
+        <input type="password" id="accessCode" name="accessCode" class="form-control" required aria-label="Access Code">
+        <button type="submit" class="btn mt-3">Submit</button>
+    </form>
+</div>
+<!-- Error Modal -->
+<div class="modal fade" id="errorModal" tabindex="-1" role="dialog" aria-labelledby="errorModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="errorModalLabel">Error</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          {% for message in get_flashed_messages(category_filter=["error"]) %}
+            <p class="error-message">{{ message }}</p>
+          {% endfor %}
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script>
+    document.querySelector('form').addEventListener('submit', function() {
+    document.querySelector('button[type="submit"]').innerHTML = 'Processing... <i class="fas fa-spinner fa-spin"></i>';
+});
+$(document).ready(function() {
+    if ($('.modal-body p').length) {
+        $('#errorModal').modal('show');
+    }
+});
+</script>
+</body>
+</html>

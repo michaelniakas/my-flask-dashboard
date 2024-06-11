@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Viewing LinkedIn Data</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f4f3f8;
+            color: #333;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 20px;
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.1);
+        }
+        .title-3d {
+            text-align: center;
+            color: #2867B2;
+            text-shadow: 1px 1px 2px #aaa;
+            margin-bottom: 30px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #eae0f8;
+        }
+        th {
+            position: sticky;
+            top: 0;
+            background-color: #2867B2;
+            color: white;
+            z-index: 2;
+        }
+        .first-column {
+            position: sticky;
+            left: 0;
+            background-color: #2867B2;
+            color: white;
+            z-index: 1;
+        }
+        tr:nth-child(even) {background-color: #d0b0f1}
+        .back-btn {
+            display: block;
+            width: max-content;
+            margin: 20px auto;
+        }
+        #searchInput {
+            margin-bottom: 20px;
+            border-radius: 20px;
+            border: 1px solid #ccc;
+            padding: 10px;
+        }
+        .table-responsive {
+            display: block;
+            width: 100%;
+            overflow-x: auto;
+            overflow-y: auto;
+            max-height: 60vh;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .sticky-header th {
+            position: sticky;
+            top: 0;
+            background-color: #2867B2;
+            color: white;
+        }
+        .sticky-top-left {
+            position: sticky;
+            left: 0;
+            z-index: 3;
+            background-color: #2867B2;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2 class="title-3d">LinkedIn Data</h2>
+        <input type="text" id="searchInput" onkeyup="searchTable()" placeholder="Search for names.." title="Type in a name" class="form-control">
+        <div class="table-responsive">
+            {{ table|safe }}
+        </div>
+        <a href="/" class="btn btn-outline-dark back-btn">Back to Home</a>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        function searchTable() {
+            var input, filter, table, tr, td, i, j, shouldDisplay;
+            input = document.getElementById("searchInput");
+            filter = input.value.toUpperCase();
+            table = document.querySelector("table");
+            tr = table.getElementsByTagName("tr");
+
+            for (i = 1; i < tr.length; i++) {
+                tr[i].style.display = "none";
+                td = tr[i].getElementsByTagName("td");
+                shouldDisplay = false;
+
+                for (j = 0; j < td.length; j++) {
+                    if (td[j]) {
+                        txtValue = td[j].textContent || td[j].innerText;
+                        if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                            shouldDisplay = true;
+                            break;
+                        }
+                    }
+                }
+
+                tr[i].style.display = shouldDisplay ? "" : "none";
+            }
+        }
+
+        window.onload = function() {
+            var rows = document.querySelectorAll("table tr");
+            rows.forEach(row => {
+                var firstCell = row.cells[0];
+                if (firstCell) {
+                    firstCell.classList.add("first-column");
+                }
+            });
+        }
+    </script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            document.querySelectorAll("table tbody tr").forEach(function(row) {
+                var firstCell = row.cells[0];
+                if (firstCell) {
+                    firstCell.classList.add("first-column");
+                }
+            });
+            var topLeftCell = document.querySelector("table th:first-child");
+            if (topLeftCell) {
+                topLeftCell.classList.add("sticky-top-left");
+            }
+        });
+    </script>
+</body>
+</html>
+

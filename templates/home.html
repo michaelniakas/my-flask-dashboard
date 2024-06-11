@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Data Management Dashboard</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.4/css/all.css">
+    <style>
+        body {
+            background-color: hsl(9, 65%, 65%); /* Dark background */
+            color: #fff; /* Light text */
+        }
+        .container {
+            background-color: hsl(9, 72%, 73%); /* Darker container background */
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        .dashboard-button {
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        .department-col {
+            margin: 20px 0;
+        }
+        .department-header {
+            margin-bottom: 25px;
+        }
+        /* Custom button colors */
+        .btn-bdm {
+            background-color: #69ACDF;
+            color: #fff;
+        }
+        .btn-management {
+            background-color: #E0CBA4;
+            color: #fff;
+        }
+        .btn-marketing {
+            background-color: #C6C84F;
+            color: #fff;
+        }
+        .btn-linkedin {
+            background-color: #2867B2;
+            color: #fff;
+        }
+        /* Faded edit buttons */
+        .btn-outline-bdm {
+            border-color: #69ACDF;
+            color: #69ACDF;
+        }
+        .btn-outline-management {
+            border-color: #E0CBA4;
+            color: #E0CBA4;
+        }
+        .btn-outline-marketing {
+            border-color: #C6C84F;
+            color: #C6C84F;
+        }
+        .btn-outline-linkedin {
+            border-color: #2867B2;
+            color: #2867B2;
+        }
+        .btn-outline-bdm:hover, .btn-outline-management:hover, .btn-outline-marketing:hover, .btn-outline-linkedin:hover{
+            background-color: rgba(255,255,255,0.1);
+        }
+        .fas {
+            margin-right: 5px; /* Adds space between the icon and text */
+        }
+        .logo-3d {
+            max-height: 100px;
+            transition: transform 0.5s;
+            transform: perspective(500px) rotateY(20deg);
+        }
+        .logo-3d:hover {
+            transform: perspective(500px) rotateY(0deg);
+        }
+    </style>
+</head>
+<body>
+    <div class="text-center mb-4">
+        <img src="{{ url_for('static', filename='images/LOGO-MCB.png') }}" alt="Organization Logo" class="logo-3d">
+    </div>
+    
+    <div class="container text-center mt-5">
+        <h1 class="department-header">Welcome to Our Data Management Dashboard</h1>
+        <p>Please select a department to view or edit its data:</p>
+        <div class="row mt-4">
+            <div class="col department-col">
+                <a href="/view_data/BDM" class="btn btn-lg btn-bdm dashboard-button"><i class="fas fa-eye"></i>View Business Development</a>
+                <a href="/select_file/BDM" class="btn btn-lg btn-outline-bdm dashboard-button"><i class="fas fa-edit"></i>Edit Business Development</a>
+            </div>
+            <div class="col department-col">
+                <a href="/view_data/Management" class="btn btn-lg btn-management dashboard-button"><i class="fas fa-eye"></i>View Management Information</a>
+                <a href="/view_excel/Management/Management.xlsx" class="btn btn-lg btn-outline-management dashboard-button"><i class="fas fa-edit"></i>Edit Management Information</a>
+            </div>
+            <div class="col department-col">
+                <a href="/view_data/Marketing" class="btn btn-lg btn-marketing dashboard-button"><i class="fas fa-eye"></i>View Marketing Information</a>
+                <a href="/select_file/Marketing" class="btn btn-lg btn-outline-marketing dashboard-button"><i class="fas fa-edit"></i>Edit Marketing Information</a>
+            </div>
+            <div class="col department-col">
+                <a href="/view_data/Linkedin" class="btn btn-lg btn-linkedin dashboard-button"><i class="fas fa-eye"></i>View LinkedIn Statistics</a>
+                <a href="/upload_linkedin" class="btn btn-lg btn-outline-linkedin dashboard-button"><i class="fas fa-edit"></i>Edit LinkedIn Statistics</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

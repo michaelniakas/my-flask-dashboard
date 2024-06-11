@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Select File to Edit</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.4/css/all.css">
+    <style>
+        body {
+            background-color: hsl(9, 65%, 65%); /* Soft beige from your palette for a relaxing vibe */
+            color: #333; /* Contrast color for readability */
+            padding-top: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Modern and clean font */
+        }
+        .container {
+            background-color: hsl(9, 72%, 73%); /* Clean white background for focus area */
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Soft shadow for depth */
+        }
+        h1 {
+            text-align: center;
+            color: #E63312; /* Using BDM color for title to tie in with the theme */
+            text-shadow: 1px 1px 2px #aaa; /* Subtle shadow for depth */
+        }
+        .list-group-item {
+            border-color: #E63312; /* Marketing color for borders */
+            background-color: hsl(9, 65%, 73%); /* Lighter Management color for list items */
+            color: #333; /* Dark color for text */
+            transition: background-color 0.2s ease-in-out; /* Smooth transition for hover effects */
+            text-align: center; /* Center text for alignment */
+        }
+        .list-group-item:hover {
+            background-color: #E63312; /* BDM color for hover */
+            color: #fff; /* White text on hover for contrast */
+        }
+        .fas.fa-edit {
+            color: #080606; /* Vibrant accent color for edit icon */
+        }
+        .btn-outline-light {
+            color: #E63312; /* Vibrant orange for back button */
+            border-color: #E63312; /* Border color matches the text */
+        }
+        .btn-outline-light:hover {
+            background-color: #E63312; /* Vibrant orange background on hover */
+            color: #fff; /* White text for contrast */
+        }
+        footer.my-footer {
+            background-color: hsl(9, 65%, 65%); /* Dark background for footer for contrast */
+            color: #fff; /* White text for readability */
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            text-align: center;
+            padding: 10px;
+        }
+        footer a {
+            color: #F59C24; /* Warm accent color for links in footer for a pop of color */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mb-4 title-3d">Select Scientific Domain/Sector to Edit</h1>
+        <div class="list-group">
+            {% for file in files %}
+                <a href="{{ url_for('view_excel', department=department, filename=file) }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-edit"></i>Edit {{ file.split('.')[0] }}
+                </a>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="text-center">
+        <a href="javascript:history.back()" class="btn btn-outline-light"><i class="fas fa-arrow-left"></i> Back</a>
+    </div>
+
+    <footer class="my-footer">
+        © 2024 MCB | <a href="#" class="text-light">Help & Support</a>
+    </footer>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

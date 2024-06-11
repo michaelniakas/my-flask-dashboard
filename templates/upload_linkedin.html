@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Upload LinkedIn Data</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: hsl(9, 65%, 65%); /* Soft beige for a relaxing vibe */
+            color: #333; /* Contrast color for readability */
+            padding-top: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Modern and clean font */
+        }
+        .container {
+            background-color: hsl(9, 72%, 73%); /* Clean white background for focus area */
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Soft shadow for depth */
+        }
+        .title-3d {
+            text-align: center;
+            color: #E63312; /* BDM color for title */
+            text-shadow: 1px 1px 2px #aaa; /* Subtle shadow for depth */
+            margin-bottom: 30px;
+        }
+        .form-group label {
+            color: #E63312; /* BDM color for labels */
+        }
+        .btn-linkedin {
+            background-color: #E63312; /* BDM color for button */
+            color: white;
+        }
+        .btn-linkedin:hover {
+            background-color: #C1270F; /* Darker BDM color on hover */
+            color: white;
+        }
+        .back-btn {
+            display: block;
+            width: max-content;
+            margin: 20px auto;
+        }
+        footer.my-footer {
+            background-color: hsl(9, 65%, 65%); /* Matching the body background */
+            color: #fff; /* White text for readability */
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            text-align: center;
+            padding: 10px;
+        }
+        footer a {
+            color: #F59C24; /* Warm accent color for links in footer */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2 class="title-3d">Upload New LinkedIn Data</h2>
+        <form action="/upload_linkedin" method="post" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="file">Choose file:</label>
+                <input type="file" class="form-control-file" id="file" name="file">
+            </div>
+            <button type="submit" class="btn btn-linkedin">Upload</button>
+        </form>
+        <a href="/" class="btn btn-outline-dark back-btn">Back to Home</a>
+    </div>
+    <footer class="my-footer">
+        <div>© 2024 MCB | <a href="#" class="text-light">Help & Support</a></div>
+    </footer>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Excel Data</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <style>
+        body {
+            background-color: #f4f3f8; /* Soft pastel background */
+            color: #333; /* Darker text for contrast against a lighter background */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Modern font */
+        }
+        .container {
+            background-color: #ffffff; /* Clean white for the container */
+            padding: 20px;
+            border-radius: 12px; /* Rounded corners for modern feel */
+            margin-top: 20px;
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.1); /* Soft shadow for depth */
+            max-width: 800px; /* Adjust based on your needs */
+            margin: auto; /* Center the container */
+        }
+        .title-3d {
+            text-align: center;
+            color: #6d6875; /* Soft purple for a modern look */
+            text-shadow: 1px 1px 2px #aaa; /* Softer 3D effect */
+            margin-bottom: 30px;
+        }
+        .table-responsive {
+            display: block;
+            width: 100%;
+            overflow-x: auto; /* Allows horizontal scrolling */
+            overflow-y: auto; /* Allows vertical scrolling */
+            max-height: 60vh; /* 60% of the viewport height */
+            border: 1px solid #ddd; /* Light border for definition */
+            border-radius: 8px; /* Consistent rounded corners */
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #eae0f8; /* Soft purple for separation */
+        }
+        th {
+            position: sticky;
+            top: 0;
+            background-color: #b5838d; /* Pastel red for the header */
+            color: white;
+            z-index: 2;
+        }
+        .first-column {
+            position: sticky;
+            left: 0;
+            background-color: #634496; /* Consistent with the header color */
+            color: white;
+            z-index: 1;
+        }
+        .sticky-top-left {
+            position: sticky;
+            left: 0;
+            top: 0; /* Ensures it sticks at the top as well */
+            background-color: #b5838d; /* Or any desired color */
+            z-index: 3; /* Higher than other sticky elements */
+        }
+
+        tr:nth-child(even) {background-color: #d0b0f1;} /* Light purple for even rows */
+        .btn-primary {
+            background-color: #634496; /* Adjust button color to match theme */
+            border-color: #634496;
+        }
+        .btn-primary:hover {
+            background-color: #7c3791; /* Darker shade for hover */
+            border-color: #7c3791;
+        }
+        .back-btn {
+            display: block;
+            width: max-content;
+            margin: 20px auto;
+        }        
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1 class="title-3d">Edit Data: {{ filename }}</h1>
+    <input type="text" id="searchInput" placeholder="Search..." class="form-control mb-3">
+    <form id="excelDataForm">
+        <div contenteditable="true" class="table-responsive">
+            {{ table|safe }}
+        </div>
+        <button type="button" onclick="updateExcel()" class="btn btn-primary mt-3">Save Changes</button>
+    </form>
+    <a href="/" class="btn btn-outline-dark back-btn">Back to Home</a>
+</div>
+
+<script>
+function collectTableData() {
+    const data = [];
+    document.querySelectorAll('#excelTable tbody tr').forEach((row, rowIndex) => {
+        row.querySelectorAll('td').forEach((cell, cellIndex) => {
+            let value = cell.innerText.trim(); // Initially treat all values as text
+
+            // Try to convert text to a number if it's purely numerical
+            if (!isNaN(value) && value !== '') {
+                // Convert to float or integer, depending on the presence of a decimal point
+                value = value.includes('.') ? parseFloat(value) : parseInt(value, 10);
+            }
+
+            data.push({
+                row: rowIndex,
+                col: cellIndex,
+                value: value // Now 'value' could be a string or a number
+            });
+        });
+    });
+    return data;
+}
+
+
+function updateExcel() {
+    const department = "{{ department }}";
+    // Ensure the filename matches the expected structure in the backend
+    let filename = "{{ filename }}";
+    if (department !== 'BDM' && department !='Marketing') {
+        filename = `${department}.xlsx`; // Adjust for non-BDM departments
+    }
+
+    const tableData = collectTableData();
+
+    fetch(`/update_excel/${department}/${filename}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({tableData}),
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert('Excel file updated successfully');
+    })
+    .catch((error) => {
+        console.error('Error:', error);
+        alert('Failed to update Excel file');
+    });
+}
+
+document.addEventListener('DOMContentLoaded', (event) => {
+    const table = document.getElementById('excelTable');
+    if (table) {
+        table.addEventListener('click', function(e) {
+            const target = e.target;
+            if (target.matches('.non-editable') || target.getAttribute('contenteditable') === 'false') {
+                e.preventDefault(); // Prevent default action
+                return false; // Stop further handling
+            }
+        });
+
+        table.addEventListener('keydown', function(e) {
+            const target = e.target;
+            if (target.matches('.non-editable') || target.getAttribute('contenteditable') === 'false') {
+                e.preventDefault(); // Prevent typing
+                return false; // Stop further handling
+            }
+        });
+    }
+});
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Function to add the first-column class and target the top-left cell
+        const applyColumnClasses = () => {
+            document.querySelectorAll("table tbody tr").forEach(function(row) {
+                var firstCell = row.cells[0];
+                if (firstCell) {
+                    firstCell.classList.add("first-column");
+                }
+            });
+            // Target the top-left cell specifically
+            var topLeftCell = document.querySelector("table th:first-child");
+            if (topLeftCell) {
+                topLeftCell.classList.add("sticky-top-left");
+            }
+        };
+    
+        // Function to filter/search the table rows based on input
+        const searchTable = () => {
+            var input, filter, table, tr, td, i, txtValue;
+            input = document.getElementById("searchInput");
+            filter = input.value.toUpperCase();
+            table = document.querySelector("table");
+            tr = table.getElementsByTagName("tr");
+            for (i = 1; i < tr.length; i++) { // Start from 1 to skip header row
+                td = tr[i].getElementsByTagName("td")[0]; // Adjust based on which column you're targeting
+                if (td) {
+                    txtValue = td.textContent || td.innerText;
+                    if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                        tr[i].style.display = "";
+                    } else {
+                        tr[i].style.display = "none";
+                    }
+                }
+            }
+        };
+    
+        // Assign the searchTable function to the search input's onkeyup event
+        const searchInput = document.getElementById("searchInput");
+        if (searchInput) {
+            searchInput.onkeyup = searchTable;
+        }
+    
+        // Apply column classes
+        applyColumnClasses();
+    });
+    </script>
+    
+</body>
+</html>

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit BDM Data</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+<div class="container">
+    <h1>Edit BDM Data</h1>
+    <form id="bdmDataForm" method="post" action="/submit_bdm">
+        <div class="form-group">
+            <label for="shortlist">Shortlist:</label>
+            <select class="form-control" id="shortlist" name="Shortlist" required>
+                <option value="">Select...</option>
+                <option value="True">True</option>
+                <option value="False">False</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="duration">Duration of Event:</label>
+            <input type="number" class="form-control" id="duration" name="Duration of event" min="1" max="100" required>
+        </div>
+        <!-- Add other fields similarly, utilizing appropriate HTML5 validation attributes -->
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script>
+    // You can add custom JavaScript validation or enhancements here if necessary
+</script>
+</body>
+</html>

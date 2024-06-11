@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Management Department</title>
+    <!-- Bootstrap CSS for styling -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f4f3f8; /* Soft pastel background */
+            color: #333; /* Darker text for contrast against a lighter background */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Modern font */
+        }
+        .container {
+            background-color: #ffffff; /* Clean white for the container */
+            padding: 20px;
+            border-radius: 12px; /* Rounded corners for modern feel */
+            margin-top: 20px;
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.1); /* Soft shadow for depth */
+        }
+        h1 {
+            text-align: center;
+            color: #6d6875; /* Soft purple for a modern look */
+            margin-bottom: 30px;
+        }
+        .title-3d {
+            text-align: center;
+            color: #6d6875; /* Soft purple for a modern look */
+            text-shadow: 1px 1px 2px #aaa; /* Softer 3D effect */
+            margin-bottom: 30px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #eae0f8;
+        }
+        th {
+            position: sticky;
+            top: 0;
+            background-color: #b5838d; /* Or any color you used for the header */
+            color: white;
+            z-index: 2;
+        }
+        .first-column {
+            position: sticky;
+            left: 0;
+            background-color: #634496; /* Or the color for the first column */
+            color: white;
+            z-index: 1;
+        }
+        tr:nth-child(even) {background-color: #d0b0f1}
+        .back-btn {
+            display: block;
+            width: max-content;
+            margin: 20px auto;
+        }
+        #searchInput {
+            margin-bottom: 20px;
+            border-radius: 20px; /* Rounded input for modern styling */
+            border: 1px solid #ccc;
+            padding: 10px;
+        }
+        .table-responsive {
+            display: block;
+            width: 100%;
+            overflow-x: auto; /* Allows horizontal scrolling */
+            overflow-y: auto; /* Allows vertical scrolling */
+            max-height: 60vh; /* 60% of the viewport height */
+            border: 1px solid #ddd; /* Light border for definition */
+            border-radius: 8px; /* Consistent rounded corners */
+        }
+        .sticky-header th {
+            position: sticky;
+            top: 0;
+            background-color: #634496; /* Header background color */
+            color: white;
+        }
+        .sticky-top-left {
+            position: sticky;
+            left: 0;
+            z-index: 3; /* Ensure this is above both the sticky header and the sticky first column */
+            background-color: #7c3791; /* Match the header background */
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2 class="title-3d">Management Department Data</h2>
+        <!-- Search input -->
+        <input type="text" id="searchInput" onkeyup="searchTable()" placeholder="Search for names.." title="Type in a name" class="form-control">        <!-- Example content, like a table for displaying Excel data or options for uploading files -->
+        <div class="table-responsive"></divclass>
+            {{ table|safe }}
+        </div>
+        <a href="/" class="btn btn-outline-dark back-btn">Back to Home</a>
+    </div>
+    <!-- Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <!-- Include your JavaScript for table search and styling -->
+    <script>
+function searchTable() {
+    var input, filter, table, tr, td, i, txtValue;
+    input = document.getElementById("searchInput");
+    filter = input.value.toUpperCase();
+    table = document.querySelector("table");
+    tr = table.getElementsByTagName("tr");
+    for (i = 1; i < tr.length; i++) { // Start from 1 to skip header row
+        td = tr[i].getElementsByTagName("td")[0]; // Adjust based on which column you're targeting
+        if (td) {
+            txtValue = td.textContent || td.innerText;
+            if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                tr[i].style.display = "";
+            } else {
+                tr[i].style.display = "none";
+            }
+        }
+    }
+}
+
+        window.onload = function() {
+    var rows = document.querySelectorAll("table tr");
+    rows.forEach(row => {
+        var firstCell = row.cells[0];
+        if (firstCell) {
+            firstCell.classList.add("first-column");
+        }
+    });
+}
+
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Apply the first-column class
+        document.querySelectorAll("table tbody tr").forEach(function(row) {
+            var firstCell = row.cells[0];
+            if (firstCell) {
+                firstCell.classList.add("first-column");
+            }
+        });
+        // Target the top-left cell specifically
+        var topLeftCell = document.querySelector("table th:first-child");
+        if (topLeftCell) {
+            topLeftCell.classList.add("sticky-top-left");
+        }
+    });
+</script>
+</body>
+</html>
