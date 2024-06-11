@@ -21,6 +21,10 @@ The MCB Dashboard Application is designed to provide a comprehensive view of dat
 ### Filtering
 - For the `BDM` department, users can filter visualizations by `Status` and `Shortlist` values.
 
+### BERT Profile Similarities
+- The application includes an NLP feature that uses BERT to compute profile similarities.
+- This feature compares textual profiles to identify similarities and differences.
+
 ### Responsive Design
 - The application has a responsive design, ensuring it works well on different devices.
 
