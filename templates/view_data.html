@@ -86,7 +86,14 @@
 <body>
     <div class="container">
         <h2 class="title-3d">Excel Data: {{ department }} - {{ filename }}</h2>
-        <input type="text" id="searchInput" onkeyup="searchTable()" placeholder="Search for names.." title="Type in a name" class="form-control">
+        <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Search for names.." title="Type in a name" class="form-control">
+        <select id="managerFilter" class="form-control mb-3" onchange="filterTable()">
+            <option value="">Select BDM Manager</option>
+            <option value="none">None</option>
+            <option value="anna">Anna</option>
+            <option value="tom">Tom</option>
+            <option value="other">Other</option>
+        </select>   
         <div class="table-responsive"></divclass>
             {{ table|safe }}
         </div>
@@ -96,37 +103,46 @@
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script>
-function searchTable() {
-    var input, filter, table, tr, td, i, j, shouldDisplay;
-    input = document.getElementById("searchInput");
-    filter = input.value.toUpperCase();
-    table = document.querySelector("table");
-    tr = table.getElementsByTagName("tr");
+function filterTable() {
+    const searchInput = document.getElementById("searchInput").value.toUpperCase();
+    const managerFilter = document.getElementById("managerFilter").value.toLowerCase();
+    const table = document.querySelector("table");
+    const tr = table.getElementsByTagName("tr");
 
-    // Loop through all rows, starting from index 1 (to skip the table header)
-    for (i = 1; i < tr.length; i++) {
-        tr[i].style.display = "none";  // Hide the row initially
-        td = tr[i].getElementsByTagName("td");
-        shouldDisplay = false;
+    for (let i = 1; i < tr.length; i++) {
+        let shouldDisplay = true;
 
-        // Search in all columns
-        for (j = 0; j < td.length; j++) {
-            if (td[j]) {
-                txtValue = td[j].textContent || td[j].innerText;
-                if (txtValue.toUpperCase().indexOf(filter) > -1) {
-                    shouldDisplay = true;  // If a match is found, set flag to true
-                    break;  // Break the loop since a match is found
+        const tds = tr[i].getElementsByTagName("td");
+        let searchMatch = false;
+        let managerMatch = false;
+
+        // Check search input match
+        for (let j = 0; j < tds.length; j++) {
+            const td = tds[j];
+            if (td) {
+                const txtValue = td.textContent || td.innerText;
+                if (txtValue.toUpperCase().indexOf(searchInput) > -1) {
+                    searchMatch = true;
                 }
             }
         }
 
-        // Show or hide the row based on the search result
+        // Check manager filter match (Assuming BDM Manager is the 19th column)
+        const managerTd = tds[18]; // Adjust this index based on your actual table structure
+        if (managerTd) {
+            const managerValue = managerTd.textContent.trim().toLowerCase();
+            if (managerFilter === "" || managerValue === managerFilter) {
+                managerMatch = true;
+            }
+        }
+
+        // Display the row if both filters match
+        shouldDisplay = searchMatch && managerMatch;
         tr[i].style.display = shouldDisplay ? "" : "none";
     }
 }
 
-
-        window.onload = function() {
+window.onload = function() {
     var rows = document.querySelectorAll("table tr");
     rows.forEach(row => {
         var firstCell = row.cells[0];
@@ -136,24 +152,21 @@ function searchTable() {
     });
 }
 
-</script>
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        // Apply the first-column class
-        document.querySelectorAll("table tbody tr").forEach(function(row) {
-            var firstCell = row.cells[0];
-            if (firstCell) {
-                firstCell.classList.add("first-column");
-            }
-        });
-        // Target the top-left cell specifically
-        var topLeftCell = document.querySelector("table th:first-child");
-        if (topLeftCell) {
-            topLeftCell.classList.add("sticky-top-left");
+document.addEventListener("DOMContentLoaded", function() {
+    // Apply the first-column class
+    document.querySelectorAll("table tbody tr").forEach(function(row) {
+        var firstCell = row.cells[0];
+        if (firstCell) {
+            firstCell.classList.add("first-column");
         }
     });
+    // Target the top-left cell specifically
+    var topLeftCell = document.querySelector("table th:first-child");
+    if (topLeftCell) {
+        topLeftCell.classList.add("sticky-top-left");
+    }
+});
 </script>
-
 </body>
 </html>
 

@@ -122,6 +122,12 @@
 <div class="container">
     <h1 class="title-3d"> {{ filename.split('.')[0] }}</h1>
     <input type="text" id="searchInput" placeholder="Search..." class="form-control mb-3">
+    <select id="managerFilter" class="form-control mb-3">
+        <option value="">Select BDM Manager</option>
+        {% for manager in managers %}
+            <option value="{{ manager }}">{{ manager }}</option>
+        {% endfor %}
+    </select>
     <form id="excelDataForm">
         <div contenteditable="true" class="table-responsive">
             {{ table|safe }}
@@ -165,9 +171,7 @@ function updateExcel() {
     const department = "{{ department }}";
     // Ensure the filename matches the expected structure in the backend
     let filename = "{{ filename }}";
-    if (department !== 'BDM' && department !='Marketing') {
-        filename = `${department}.xlsx`; // Adjust for non-BDM departments
-    }
+
 
     const tableData = collectTableData();
 
@@ -207,6 +211,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
             }
         });
     }
+    document.getElementById('managerFilter').addEventListener('change', filterTable);
+
 });
 </script>
 <script>
@@ -261,6 +267,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
         applyColumnClasses();
     });
     </script>
+
+    
 <script>
     document.addEventListener("DOMContentLoaded", function() {
         const table = document.getElementById('excelTable');
@@ -281,7 +289,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 'site visit',
                 'bid lost',
                 'bid won: contract not signed',
-                'bid won: contract signed'
+                'bid won: contract signed',
+                'bid: no-go'
                 ];
                 const managerOptions = [
                     'None',
@@ -296,39 +305,42 @@ document.addEventListener('DOMContentLoaded', (event) => {
                     'Other'
                 ];
 
-                updateCellWithDropdown(row, 14, initiatiefOptions);
+                updateCellWithDropdown(row, 15, initiatiefOptions);
 
-                updateCellWithDropdown(row, 17, managerOptions);
+                updateCellWithDropdown(row, 18, managerOptions);
 
                 // Dropdown for 'Status', assuming it's the 10th column
-                updateCellWithDropdown(row, 10, statusOptions);
+                updateCellWithDropdown(row, 11, statusOptions);
                 
                 // Numeric input for 'Duration of Event', assuming it's the 6th column
-                updateCellWithInput(row, 5, 'number', 1, 100); 
+                updateCellWithInput(row, 6, 'number', 1, 100); 
                 
                 // Numeric input for 'Average Number of Delegates', assuming it's the 7th column
-                updateCellWithInput(row, 6, 'number', 1, 20000); 
+                updateCellWithInput(row, 7, 'number', 1, 20000); 
                 
                 // Date input for 'Bidding Deadline', assuming it's the 8th column
-                updateCellWithInput(row, 9, 'date'); 
-
+                updateCellWithInput(row, 10, 'date'); 
+                // Date input for 'Date of congress', assuming it's the 8th column
+                updateCellWithInput(row, 19, 'date'); 
                 //Numeric input for 'Spinoff', assuming it's the 7th column
-                updateCellWithInput(row, 7, 'number', 1, 1000000000);
+                updateCellWithInput(row, 8, 'number', 1, 1000000000);
                 //Numeric input for 'Previous Bids', assuming it's the 10th column
-                updateCellWithInput(row, 11, 'number', 1, 10);
+                updateCellWithInput(row, 12, 'number', 1, 10);
+                //Numeric input for 'CF number' assuming it's the 19th column
+                updateCellWithInput(row, 4, 'number', 1, 1000000000);
 
             });
         }
     });
     function updateCellWithDropdown(row, cellIndex, options) {
     const cell = row.cells[cellIndex];
-    let currentValue = cell.innerText.trim();
+    let currentValue = cell.innerText.trim().toLowerCase();
 
     // Create dropdown HTML with options
     let dropdownHTML = `<select>`;
     options.forEach(option => {
-        let isSelected = currentValue === option ? 'selected' : '';
-        dropdownHTML += `<option value="${option}" ${isSelected}>${option}</option>`;
+        let isSelected = currentValue === option.toLowerCase() ? 'selected' : '';
+        dropdownHTML += `<option value="${option.toLowerCase()}" ${isSelected}>${option}</option>`;
     });
     dropdownHTML += `</select>`;
 
@@ -336,6 +348,23 @@ document.addEventListener('DOMContentLoaded', (event) => {
     cell.innerHTML = dropdownHTML;
 }
 
+function filterTable() {
+    const managerFilter = document.getElementById('managerFilter').value.toLowerCase();
+    const table = document.getElementById('excelTable');
+    const rows = table.querySelectorAll('tbody tr');
+
+    rows.forEach(row => {
+        const managerCell = row.cells[18]; // Adjust this index to match the 'BDM Manager' column
+        if (managerCell) {
+            const manager = managerCell.querySelector('select').value.toLowerCase();
+            if (managerFilter === "" || manager === managerFilter) {
+                row.style.display = "";
+            } else {
+                row.style.display = "none";
+            }
+        }
+    });
+}
 
     
     function updateCellWithInput(row, cellIndex, type, min = null, max = null) {
@@ -358,7 +387,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
         if (table) {
             const rows = table.querySelectorAll('tbody tr');
             rows.forEach((row, rowIndex) => {
-                const similarityCellIndex = 8; // Adjust this index to match the "Similarity" column in your table
+                const similarityCellIndex = 9; // Adjust this index to match the "Similarity" column in your table
                 const similarityCell = row.cells[similarityCellIndex];
                 // Display current similarity score (if any) and the upload button
                 const currentScore = similarityCell.innerText.trim();
@@ -452,26 +481,29 @@ function addNewRow() {
         let htmlContent = "";
         // Determine the type of cell based on column index and set HTML accordingly
         switch(i) {
-            case 4: // Assuming 4th index is for 'Shortlist' dropdown
+            case 5: // Assuming 4th index is for 'Shortlist' dropdown
                 htmlContent = `<select>
                                   <option value="true">True</option>
                                   <option value="false">False</option>
                                </select>`;
                 break;
-            case 10: // Assuming 10th index is for 'Status' dropdown
+            case 11: // Assuming 10th index is for 'Status' dropdown
                 htmlContent = statusDropdownHtml(); // Function call to generate HTML
                 break;
-            case 9: // Adjusted index for 'Bidding deadline' date input
+            case 10: // Adjusted index for 'Bidding deadline' date input
                 htmlContent = `<input type="date">`;
                 break;
-            case 8: // Assuming 8th index is for 'Similarity'
+            case 19: // Adjusted index for 'Date of congress' date input
+                htmlContent = `<input type="date">`;
+                break;                
+            case 9: // Assuming 8th index is for 'Similarity'
                 htmlContent = `<input type="file" id="file_${table.rows.length - 2}_${i}" accept=".txt" style="display: none;">
                                <button type="button" onclick="uploadFile(${table.rows.length - 2}, ${i})">Upload Profile</button>`;
                 break;
-            case 17:
+            case 18:
                 htmlContent = statusDropdownHtmlforManager();
                 break;    
-            case 14:
+            case 15:
                 htmlContent = statusDropdownHtmlforInitiatief();
                 break;    
             default:
@@ -485,10 +517,10 @@ function addNewRow() {
 // Helper function to create HTML for 'Status' dropdown
 function statusDropdownHtml() {
     const options = [
-        'None','First research/ in touch with association', 'Not interested', 'Interesting for the future',
-        'Contact with local scientist', 'Expression of interest/ preliminary application',
-        'Maastricht bid in process', 'Bid submitted', 'Site visit', 'Bid lost',
-        'Bid won: contract not signed', 'Bid won: contract signed'
+        'none', 'first research/ in touch with association', 'not interested', 'interesting for the future',
+        'contact with local scientist', 'expression of interest/ preliminary application',
+        'maastricht bid in process', 'bid submitted', 'site visit', 'bid lost',
+        'bid won: contract not signed', 'bid won: contract signed', 'bid: no-go'
     ];
     let dropdownHtml = '<select>';
     options.forEach(option => {
@@ -499,7 +531,7 @@ function statusDropdownHtml() {
 }
 function statusDropdownHtmlforManager() {
     const options = [
-    'None','Anna','Tom','Other'
+    'none', 'anna', 'tom', 'other'
     ];
     let dropdownHtml = '<select>';
     options.forEach(option => {
@@ -510,7 +542,7 @@ function statusDropdownHtmlforManager() {
 }
 function statusDropdownHtmlforInitiatief() {
     const options = [
-    'None','MCB','MECC','Other'
+    'none', 'mcb', 'mecc', 'other'
     ];
     let dropdownHtml = '<select>';
     options.forEach(option => {

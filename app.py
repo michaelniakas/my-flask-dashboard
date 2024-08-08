@@ -13,6 +13,7 @@ from werkzeug.serving import run_simple
 import xlrd
 import openpyxl
 import shutil
+import numpy as np
 
 app = Flask(__name__)
 app.secret_key = 'your_very_secret_key'  # Set to a random secret value
@@ -236,7 +237,8 @@ def department_files(department):
     if department == 'BDM':
         file_dir = os.path.join(BASE_PATH, 'BDM')
         files = [f for f in os.listdir(file_dir) if f.endswith('.xlsx')]
-        return render_template('bdm_files.html', files=files, department=department)
+        managers = ['None', 'Anna', 'Tom', 'Other']  # Define the options for the dropdown
+        return render_template('bdm_files.html', files=files, department=department, managers=managers)
     if department == 'Linkedin':
         file_dir = os.path.join(BASE_PATH, 'Linkedin')
         files = [f for f in os.listdir(file_dir) if f.endswith('.xlsx')]
@@ -245,12 +247,17 @@ def department_files(department):
         file_dir = os.path.join(BASE_PATH, 'Marketing')
         files = [f for f in os.listdir(file_dir) if f.endswith('.xlsx')]
         return render_template('marketing_files.html', files=files, department=department)
+    elif department == 'Management':
+        file_dir = os.path.join(BASE_PATH, 'Management')
+        files = [f for f in os.listdir(file_dir) if f.endswith('.xlsx')]
+        return render_template('management_files.html', files=files, department=department)
     else:
         filepath = os.path.join(BASE_PATH, department, department + '.xlsx')
         if os.path.exists(filepath):
             df = pd.read_excel(filepath)
             table_html = df.to_html(classes='table table-striped', border=0)
-            return render_template(f'{department}_page.html', table=table_html, department=department)
+            managers = ['None', 'Anna', 'Tom', 'Other']  # Add this line to provide the list of managers
+            return render_template(f'{department}_page.html', table=table_html, department=department, managers=managers)
         else:
             return render_template('error.html', message=f'File for {department} not found.')
         
@@ -263,7 +270,7 @@ def view_excel(department, filename):
             # Redirect to authentication page if not authenticated
             return redirect(url_for('auth_edit', department=department, filename=filename))
     
-    filepath = os.path.join(BASE_PATH, department, filename if department in ['BDM', 'Marketing'] else department + '.xlsx')
+    filepath = os.path.join(BASE_PATH, department, filename if department in ['BDM', 'Marketing', 'Management'] else department + '.xlsx')
     
     if not os.path.exists(filepath):
         return render_template('error.html', message=f'File {filename} not found in {department}.')
@@ -284,9 +291,12 @@ def view_excel(department, filename):
 
     # Use different templates based on the department
     if department == 'BDM':
-        return render_template('edit_data.html', table=table_html_modified, department=department, filename=filename)
-    elif department == 'Marketing' or department == 'Management':
+        managers = ['None', 'Anna', 'Tom', 'Other']  # Define the options for the dropdown
+        return render_template('edit_data.html', table=table_html_modified, department=department, filename=filename, managers=managers)
+    elif department == 'Marketing':
         return render_template('edit_data_Marketing.html', table=table_html_modified, department=department, filename=filename)
+    elif department == 'Management':
+        return render_template('edit_data_Management.html', table=table_html_modified, department=department, filename=filename)
 
 
 
@@ -299,7 +309,7 @@ def view_file(department, filename):
             df = pd.read_excel(filepath)
             df = df.applymap(lambda x: '{:.0f}'.format(x) if pd.notna(x) and isinstance(x, (int, float)) and x == int(x) else x)
             return render_template('view_linkedin_data.html', table=df.to_html(classes='data', header="true"))
-    if department in ['BDM', 'Marketing']:
+    if department in ['BDM', 'Marketing', 'Management']:
         filepath = os.path.join(BASE_PATH, department, filename)
     else:
         filepath = os.path.join(BASE_PATH, department, department + '.xlsx')
@@ -316,7 +326,7 @@ def view_file(department, filename):
 
 @app.route('/select_file/<string:department>')
 def select_file(department):
-    if department == 'BDM' or department == 'Marketing':
+    if department in ['BDM', 'Marketing', 'Management']:
         file_dir = os.path.join(BASE_PATH, department)
         # List all Excel files in the directory
         files = [f for f in os.listdir(file_dir) if f.endswith('.xlsx')]
@@ -325,19 +335,25 @@ def select_file(department):
 
 @app.route('/update_excel/<string:department>/<string:filename>', methods=['POST'])
 def update_excel(department, filename):
-    filepath = os.path.join(BASE_PATH, department, filename if department in ['BDM', 'Marketing'] else department + '.xlsx')
+    filepath = os.path.join(BASE_PATH, department, filename if department in ['BDM', 'Marketing','Management'] else department + '.xlsx')
     
     if not os.path.exists(filepath):
         return jsonify({"status": "error", "message": "File does not exist."})
     
     data = request.json.get('tableData', [])
+    multipliers = request.json.get('multipliers', {})
     df = pd.read_excel(filepath)
+    # Convert all values in the 'Shortlist' column to 'true'/'false' format
+    if 'Shortlist' in df.columns:
+        df['Shortlist'] = df['Shortlist'].apply(lambda x: 'true' if x == 1 else ('false' if x == 0 else str(x).lower()))    
     similarity_index = df.columns.get_loc("Similarity(campus with association)") if "Similarity(campus with association)" in df.columns else None
 
     recalculated_rows = set()  # Keep track of rows where we recalculated Spinoff
 
     for cell in data:
         row, col, value = cell['row'], cell['col'], cell['value']
+        if row >= len(df):
+            df = pd.concat([df, pd.DataFrame([pd.Series(dtype='object', index=df.columns)])], ignore_index=True)
         if 0 <= row < len(df) and 0 <= col < len(df.columns):
             column_name = df.columns[col]
 
@@ -348,48 +364,132 @@ def update_excel(department, filename):
                 continue  # Skip empty values
 
             try:
-                if column_name in ['Duration of event', 'Average number of delegates']:
-                    # Ensure value is treated as a string for isdigit check
-                    str_value = str(value)
-                    if str_value.isdigit():
-                        value = int(value)
+                print(f"Processing row: {row}, column: {column_name}, value: {value}")  # Add this line for logging
+
+                if department == 'BDM' or department == 'Marketing':
+                    if column_name in ['Duration of event', 'Average number of delegates']:
+                        # Ensure value is treated as a string for isdigit check
+                        str_value = str(value)
+                        if str_value.isdigit():
+                            value = int(value)
+                        else:
+                            continue  # Skip if the value is not a valid digit string
+                        
+                        df.at[row, column_name] = value
+
+                        # Schedule recalculation for Spinoff
+                        recalculated_rows.add(row)
+
+                    elif column_name == 'Bidding deadline':
+                        if value:
+                            df.at[row, column_name] = datetime.strptime(value, '%Y-%m-%d').date()
+                    elif column_name == 'Date of congress':
+                        if value:
+                            df.at[row, column_name] = datetime.strptime(value, '%Y-%m-%d').date()                        
+                    elif column_name == 'Shortlist':
+                        if isinstance(value, int):
+                            df.at[row, column_name] = value == 1
+                        else:
+                            df.at[row, column_name] = str(value).lower() == 'true'  # Ensure value is string before calling lower
+                    elif column_name == 'Status':
+                        df.at[row, column_name] = str(value).lower()  # Ensure value is string before calling lower
+                    elif column_name == 'Initiative MCB/MECC':
+                        df.at[row, column_name] = str(value).lower()  # Ensure value is string before calling lower
+                    elif column_name == 'BDM Manager':
+                        df.at[row, column_name] = str(value).lower()  # Ensure value is string before calling lower 
                     else:
-                        continue  # Skip if the value is not a valid digit string
-                    
-                    df.at[row, column_name] = value
+                        df.at[row, column_name] = value  # Handle other columns normally
+                elif department == 'Management': 
+                    df.at[row, column_name] = value  # Directly assign the value for Management
 
-                    # Schedule recalculation for Spinoff
-                    recalculated_rows.add(row)
-
-                elif column_name == 'Bidding deadline':
-                    if value:
-                        df.at[row, column_name] = datetime.strptime(value, '%Y-%m-%d').date()
-                elif column_name == 'Shortlist':
-                    df.at[row, column_name] = value.lower() == 'true'
-                elif column_name == 'Status':
-                    df.at[row, column_name] = value.lower()
-                elif column_name == 'Initiatief MCB/MECC':
-                    df.at[row, column_name] = value.lower()
-                elif column_name == 'BDM Manager':
-                    df.at[row, column_name] = value.lower()    
-                else:
-                    df.at[row, column_name] = value  # Handle other columns normally
             except ValueError as e:
                 print(f"Error processing {column_name} for row {row}: {e}")
-
+            except AttributeError as e:
+                print(f"AttributeError processing {column_name} for row {row}: {e}")
+                print(f"Type of value causing error: {type(value)}")                
     # Recalculate Spinoff for rows that had relevant changes
-    for row in recalculated_rows:
-        if pd.notnull(df.at[row, 'Duration of event']) and pd.notnull(df.at[row, 'Average number of delegates']):
-            duration = df.at[row, 'Duration of event']
-            delegates = df.at[row, 'Average number of delegates']
-            df.at[row, 'Spinoff'] = duration * delegates * 365  # Calculate Spinoff
+    if department == 'BDM':    
+        for row in recalculated_rows:
+            if pd.notnull(df.at[row, 'Duration of event']) and pd.notnull(df.at[row, 'Average number of delegates']):
+                duration = df.at[row, 'Duration of event']
+                delegates = df.at[row, 'Average number of delegates']
+                df.at[row, 'Spinoff'] = duration * delegates * 365  # Calculate Spinoff
+    # Apply multipliers for Management department
+    # Apply multipliers for Management department
+    if department == 'Management' and 'Overall' in filename:
+        for year in range(2024, 2030):
+            next_year = year + 1
+            multiplier = multipliers.get(str(year), None)
+            if multiplier is not None:  # Only apply if multiplier is provided
+                for suffix in ['(1st half)', '(2nd half)', '(Overall)']:
+                    current_col = f'Contribution ({year}) {suffix}'
+                    next_col = f'Contribution ({next_year}) {suffix}'
 
+                    if current_col in df.columns and next_col in df.columns:
+                        df[next_col] = df[current_col].apply(lambda x: round(x * multiplier, 2) if pd.notnull(x) and isinstance(x, (int, float, np.number)) else x)
+
+        # Calculate overall contributions for each year
+        for year in range(2024, 2031):
+            col_1st_half = f'Contribution ({year}) (1st half)'
+            col_2nd_half = f'Contribution ({year}) (2nd half)'
+            col_overall = f'Contribution ({year}) (Overall)'
+            # Convert columns to numeric, coercing errors
+            if col_1st_half in df.columns:
+                df[col_1st_half] = pd.to_numeric(df[col_1st_half], errors='coerce')
+            if col_2nd_half in df.columns:
+                df[col_2nd_half] = pd.to_numeric(df[col_2nd_half], errors='coerce')
+
+            if col_1st_half in df.columns and col_2nd_half in df.columns:
+                df[col_overall] = df.apply(lambda row: round((row[col_1st_half] if pd.notnull(row[col_1st_half]) else 0) + (row[col_2nd_half] if pd.notnull(row[col_2nd_half]) else 0), 2), axis=1)
+        
     df.to_excel(filepath, index=False)
     if department == 'BDM':
         update_overall_file()
     if department == 'Marketing' and ('2022' in filename or '2023' in filename or '2024' in filename or '2025' in filename or '2026' in filename or '2027' in filename or '2028' in filename or '2029' in filename or '2030' in filename):
         update_marketing_overall(filepath, filename, department)
+    if department == 'Management' and 'Overall' in filename:
+        update_management_files(filepath)
     return jsonify({"status": "success", "message": "Excel file updated successfully."})
+
+def update_management_files(overall_filepath):
+    overall_df = pd.read_excel(overall_filepath)
+
+    for year in range(2024, 2031):
+        year_file = os.path.join(BASE_PATH, 'Management', f'Management {year}.xlsx')
+        if os.path.exists(year_file):
+            year_df = pd.read_excel(year_file)
+
+            # Update the yearly file with the corresponding data from the overall file
+            for col_suffix in ['(1st half)', '(2nd half)', '(Overall)']:
+                overall_col = f'Contribution ({year}) {col_suffix}'
+                year_col = f'Contribution ({year}) {col_suffix}'
+
+                if overall_col in overall_df.columns:
+                    for index, row in overall_df.iterrows():
+                        shareholder = row['Shareholders']
+                        if shareholder in year_df['Shareholders'].values:
+                            year_df.loc[year_df['Shareholders'] == shareholder, year_col] = row[overall_col]
+                        else:
+                            # Add new row if the shareholder does not exist in the yearly file
+                            new_row = pd.DataFrame([{ 'Shareholders': shareholder }], columns=year_df.columns)
+                            if year_col in new_row.columns:                            
+                                new_row[year_col] = row[overall_col]
+                            year_df = pd.concat([year_df, new_row], ignore_index=True)
+            # Calculate overall contributions for each year           
+            for year in range(2024, 2031):
+                col_1st_half = f'Contribution ({year}) (1st half)'
+                col_2nd_half = f'Contribution ({year}) (2nd half)'
+                col_overall = f'Contribution ({year}) (Overall)'
+                # Convert columns to numeric, coercing errors
+                if col_1st_half in year_df.columns:
+                    year_df[col_1st_half] = pd.to_numeric(year_df[col_1st_half], errors='coerce')
+                if col_2nd_half in year_df.columns:
+                    year_df[col_2nd_half] = pd.to_numeric(year_df[col_2nd_half], errors='coerce')
+
+                if col_1st_half in year_df.columns and col_2nd_half in year_df.columns:
+                    year_df[col_overall] = year_df.apply(lambda row: round((row[col_1st_half] if pd.notnull(row[col_1st_half]) else 0) + (row[col_2nd_half] if pd.notnull(row[col_2nd_half]) else 0), 2), axis=1)
+
+            year_df.to_excel(year_file, index=False)
 
 
 
@@ -423,7 +523,7 @@ def update_marketing_overall(filepath, filename, department):
         df_overall = pd.read_excel(overall_path)
         df_year = pd.read_excel(filepath)
 
-        for column in ['1st Quarter', '2nd Quarter','3rd Quarter', '4th Quarter','Overall']:
+        for column in ['1st Quarter', '2nd Quarter', '1st Half', '3rd Quarter', '4th Quarter', '2nd Half', 'Overall']:
             if column in df_year:
                 df_overall[f'{column}({year})'] = df_year[column]
             else:
@@ -433,6 +533,7 @@ def update_marketing_overall(filepath, filename, department):
         print("Overall file updated successfully.")  # Confirmation message
     else:
         print(f"{overall_path} does not exist.")  # Error message
+
 
 
 

@@ -28,6 +28,43 @@ def init_dash(server):
         df.set_index('Date', inplace=True)
         return df
 
+    def create_management_plots(df, columns):
+        plots = []
+        for col in columns:
+            # Combine low percentage shareholders into "Participants"
+            df['Shareholder Type'] = df['Shareholders'].apply(lambda x: x if x in ['Gemeente Maastricht (excl. index)', 'Provincie Limburg (excl. index)', 'Stuurgroep Congressen(excl. index)'] else 'Participants')
+            df_grouped = df.groupby('Shareholder Type')[col].sum().reset_index()
+            fig = px.pie(df_grouped, names='Shareholder Type', values=col, title=f'Distribution of {col}')
+            plots.append(dcc.Graph(figure=fig))
+            
+            # Accumulative amount for each category
+            fig_accumulative = px.bar(df_grouped, x='Shareholder Type', y=col, title=f'Accumulative Amount for {col}')
+            plots.append(dcc.Graph(figure=fig_accumulative))
+            
+            # Categorize shareholders based on contribution size
+            df_sorted = df.sort_values(by=col, ascending=False)
+            df_sorted['Category'] = pd.cut(df_sorted[col], bins=[-1, 1000, 1250, 1500, 2000, 10000, 20000, float('inf')],
+                                        labels=['XSmall', 'Small', 'Medium', 'Large', 'XLarge', 'XXLarge', 'Mega'])
+            fig2 = px.bar(df_sorted, x='Shareholders', y=col, color='Category', title=f'{col} by Shareholder Category')
+            plots.append(dcc.Graph(figure=fig2))
+
+            # Percentage of each subcategory for Participants
+            df_participants = df_sorted[df_sorted['Shareholder Type'] == 'Participants']
+            if not df_participants.empty:
+                df_participants_grouped = df_participants.groupby('Category')[col].sum().reset_index()
+                fig4 = px.pie(df_participants_grouped, names='Category', values=col, title=f'Participants  Distribution of {col}')                
+                # Add amounts to the pie chart for Participants subcategories
+                fig4.update_traces(textinfo='label+percent+value')
+                plots.append(dcc.Graph(figure=fig4))            
+
+            # Create pie chart for each category
+            for category in df_sorted['Category'].unique():
+                df_category = df_sorted[df_sorted['Category'] == category]
+                fig3 = px.pie(df_category, names='Shareholders', values=col, title=f'{category} Contributors - Distribution of {col}')
+                plots.append(dcc.Graph(figure=fig3))
+        
+        return plots
+
     def create_linkedin_plots(df):
         metrics = [
             'Impressions (total)', 
@@ -150,6 +187,12 @@ def init_dash(server):
             2022: "red",
             2023: "green",
             2024: "blue",
+            2025: "orange",
+            2026: "purple",
+            2027: "brown",
+            2028: "pink",
+            2029: "gray",
+            2030: "cyan"
             # Add more years if needed
         }
         plots = []
@@ -204,15 +247,19 @@ def init_dash(server):
                 labelStyle={'display': 'inline-block', 'marginRight': '10px'}
             ),
             html.Button('Filter', id='filter-button', n_clicks=0, className='btn btn-primary')
-        ], id='filter-options', style={'textAlign': 'center', 'marginBottom': '20px', 'display': 'none'})
+        ], id='filter-options', style={'textAlign': 'center', 'marginBottom': '20px', 'display': 'none'}),
+        html.Div([
+            dcc.Dropdown(id='column-filter', multi=True, placeholder="Select Columns", style={'marginBottom': '10px'}),
+            html.Button('Show Plots', id='show-plots-button', n_clicks=0, className='btn btn-primary')
+        ], id='column-options', style={'textAlign': 'center', 'marginBottom': '20px', 'display': 'none'}),
     ])
 
     @dash_app.callback(
-        [Output('dashboard-title', 'children'), Output('graph-container', 'children'), Output('filter-options', 'style')],
-        [Input('url', 'pathname'), Input('filter-button', 'n_clicks')],
-        [State('status-filter', 'value'), State('shortlist-filter', 'value')]
+        [Output('dashboard-title', 'children'), Output('graph-container', 'children'), Output('filter-options', 'style'), Output('column-options', 'style'), Output('column-filter', 'options')],
+        [Input('url', 'pathname'), Input('filter-button', 'n_clicks'), Input('show-plots-button', 'n_clicks')],
+        [State('status-filter', 'value'), State('shortlist-filter', 'value'), State('column-filter', 'value')]
     )
-    def display_page(pathname, n_clicks, selected_status, selected_shortlist):
+    def display_page(pathname, n_clicks_filter, n_clicks_show, selected_status, selected_shortlist, selected_columns):
         parts = pathname.split('/')
         department = parts[2]
         filename = parts[3]
@@ -223,12 +270,12 @@ def init_dash(server):
         title = f'{department} Department Dashboard'
         plots = []
         filter_options_style = {'textAlign': 'center', 'marginBottom': '20px', 'display': 'none'}
-
+        column_options_style = {'textAlign': 'center', 'marginBottom': '20px', 'display': 'none'}
+        column_filter_options = []
 
         if department == 'BDM':
             filter_options_style = {'textAlign': 'center', 'marginBottom': '20px', 'display': 'block'}
-            # Apply filters if filter button is clicked
-            if n_clicks > 0:
+            if n_clicks_filter > 0:
                 if selected_status:
                     df = df[df['Status'].isin(selected_status)]
                 if selected_shortlist:
@@ -274,7 +321,14 @@ def init_dash(server):
         elif department == 'MarketingUpload':
             plots = create_marketing_plots(df)
 
-        return title, plots, filter_options_style
+        elif department == 'Management':
+            column_options_style = {'textAlign': 'center', 'marginBottom': '20px', 'display': 'block'}
+            column_filter_options = [{'label': col, 'value': col} for col in df.columns[1:]]  # Exclude 'Shareholders'
+            if selected_columns and n_clicks_show > 0:
+                plots = create_management_plots(df, selected_columns)
+
+        return title, plots, filter_options_style, column_options_style, column_filter_options
+
 
     @dash_app.callback(
         Output('status-filter', 'options'),

@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Excel Data</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <style>
+        body {
+            background-color: #f4f3f8; /* Soft pastel background */
+            color: #333; /* Darker text for contrast against a lighter background */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Modern font */
+        }
+        .container {
+            background-color: #ffffff; /* Clean white for the container */
+            padding: 20px;
+            border-radius: 12px; /* Rounded corners for modern feel */
+            margin-top: 20px;
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.1); /* Soft shadow for depth */
+            max-width: 800px; /* Adjust based on your needs */
+            margin: auto; /* Center the container */
+        }
+        .title-3d {
+            text-align: center;
+            color: #6d6875; /* Soft purple for a modern look */
+            text-shadow: 1px 1px 2px #aaa; /* Softer 3D effect */
+            margin-bottom: 30px;
+        }
+        .table-responsive {
+            display: block;
+            width: 100%;
+            overflow-x: auto; /* Allows horizontal scrolling */
+            overflow-y: auto; /* Allows vertical scrolling */
+            max-height: 60vh; /* 60% of the viewport height */
+            border: 1px solid #ddd; /* Light border for definition */
+            border-radius: 8px; /* Consistent rounded corners */
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #eae0f8; /* Soft purple for separation */
+        }
+        th {
+            position: sticky;
+            top: 0;
+            background-color: #b5838d; /* Pastel red for the header */
+            color: white;
+            z-index: 2;
+        }
+        .first-column {
+            position: sticky;
+            left: 0;
+            background-color: #634496; /* Consistent with the header color */
+            color: white;
+            z-index: 1;
+        }
+        .sticky-top-left {
+            position: sticky;
+            left: 0;
+            top: 0; /* Ensures it sticks at the top as well */
+            background-color: #b5838d; /* Or any desired color */
+            z-index: 3; /* Higher than other sticky elements */
+        }
+
+        tr:nth-child(even) {background-color: #d0b0f1;} /* Light purple for even rows */
+        .btn-primary {
+            background-color: #634496; /* Adjust button color to match theme */
+            border-color: #634496;
+        }
+        .btn-primary:hover {
+            background-color: #7c3791; /* Darker shade for hover */
+            border-color: #7c3791;
+        }
+        .back-btn {
+            display: block;
+            width: max-content;
+            margin: 20px auto;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1 class="title-3d">Edit Data: {{ filename }}</h1>
+    <input type="text" id="searchInput" placeholder="Search..." class="form-control mb-3">
+    <div>
+        <label for="multiplier2024">Multiplier for 2024 to 2025:</label>
+        <input type="number" id="multiplier2024" class="form-control" placeholder="Enter multiplier">
+        <label for="multiplier2025">Multiplier for 2025 to 2026:</label>
+        <input type="number" id="multiplier2025" class="form-control" placeholder="Enter multiplier">
+        <label for="multiplier2025">Multiplier for 2026 to 2027:</label>
+        <input type="number" id="multiplier2026" class="form-control" placeholder="Enter multiplier">
+        <label for="multiplier2025">Multiplier for 2027 to 2028:</label>
+        <input type="number" id="multiplier2027" class="form-control" placeholder="Enter multiplier">
+        <label for="multiplier2025">Multiplier for 2028 to 2029:</label>
+        <input type="number" id="multiplier2028" class="form-control" placeholder="Enter multiplier">
+        <label for="multiplier2025">Multiplier for 2029 to 2030:</label>
+        <input type="number" id="multiplier2029" class="form-control" placeholder="Enter multiplier">
+    </div>
+    <form id="excelDataForm">
+        <div contenteditable="true" class="table-responsive">
+            {{ table|safe }}
+        </div>
+        <button type="button" onclick="updateExcel()" class="btn btn-primary mt-3">Save Changes</button>
+        <button type="button" onclick="applyMultipliers()" class="btn btn-secondary mt-3">Apply Multipliers</button>
+        <button type="button" onclick="addNewRow()" class="btn btn-secondary mt-3">Add New Row</button>
+    </form>
+    <a href="/" class="btn btn-outline-dark back-btn">Back to Home</a>
+</div>
+
+<script>
+function collectTableData() {
+    const data = [];
+    document.querySelectorAll('#excelTable tbody tr').forEach((row, rowIndex) => {
+        row.querySelectorAll('td').forEach((cell, cellIndex) => {
+            let input = cell.querySelector('input');
+            let select = cell.querySelector('select');
+            let value = input ? input.value : select ? select.options[select.selectedIndex].value : cell.innerText.trim();
+
+
+            // Try to convert text to a number if it's purely numerical
+            if (!isNaN(value) && value !== '') {
+                // Convert to float or integer, depending on the presence of a decimal point
+                value = value.includes('.') ? parseFloat(value) : parseInt(value, 10);
+            }
+
+            data.push({
+                    row: rowIndex,
+                    col: cellIndex,
+                    value: value // Now 'value' could be a string or a number
+                });
+            });
+        });
+        return data;
+    }
+
+function updateExcel() {
+    const department = "{{ department }}";
+    // Ensure the filename matches the expected structure in the backend
+    let filename = "{{ filename }}";
+
+    const tableData = collectTableData();
+    const multipliers = collectMultipliers();
+
+    fetch(`/update_excel/${department}/${filename}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({tableData, multipliers}),
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert('Excel file updated successfully');
+    })
+    .catch((error) => {
+        console.error('Error:', error);
+        alert('Failed to update Excel file');
+    });
+}
+
+function collectMultipliers() {
+    return {
+        '2024': parseFloat(document.getElementById('multiplier2024').value),
+        '2025': parseFloat(document.getElementById('multiplier2025').value),
+        '2026': parseFloat(document.getElementById('multiplier2026').value), 
+        '2027': parseFloat(document.getElementById('multiplier2027').value), 
+        '2028': parseFloat(document.getElementById('multiplier2028').value), 
+        '2029': parseFloat(document.getElementById('multiplier2029').value)
+    };
+}
+
+function addNewRow() {
+    const table = document.getElementById('excelTable');
+    const newRow = table.insertRow(-1); // Adds a new row at the end of the table
+    const numColumns = table.rows[0].cells.length; // Assumes the header row exists and has a complete set of columns
+
+    for (let i = 0; i < numColumns; i++) {
+        let newCell = newRow.insertCell(i);
+        let htmlContent = "";
+        
+        // Determine the type of cell based on column index and set HTML accordingly
+        switch (i) {
+            // Modify the cases to match your column indices and input types
+            case 0: // Assuming 0th index is for 'Shareholders'
+                htmlContent = `<input type="text" placeholder="Enter Shareholder">`;
+                break;
+            case 1: // Assuming 1st index is for 'Contribution (2024) (1st half)'
+            case 2: // Assuming 2nd index is for 'Contribution (2024) (2nd half)'
+            case 3: // Assuming 3rd index is for 'Contribution (2024) (Overall)'
+            case 4: // Assuming 4th index is for 'Contribution (2025) (1st half)'
+            case 5: // Assuming 5th index is for 'Contribution (2025) (2nd half)'
+            case 6: // Assuming 6th index is for 'Contribution (2025) (Overall)'
+            case 7: // Assuming 7th index is for 'Contribution (2026) (1st half)'
+            case 8: // Assuming 8th index is for 'Contribution (2026) (2nd half)'
+            case 9: // Assuming 9th index is for 'Contribution (2026) (Overall)'
+            case 10: // Assuming 10th index is for 'Contribution (2027) (1st half)'
+            case 11: // Assuming 11th index is for 'Contribution (2027) (2nd half)'
+            case 12: // Assuming 12th index is for 'Contribution (2027) (Overall)'
+            case 13: // Assuming 13th index is for 'Contribution (2028) (1st half)'
+            case 14: // Assuming 14th index is for 'Contribution (2028) (2nd half)'
+            case 15: // Assuming 15th index is for 'Contribution (2028) (Overall)'
+            case 16: // Assuming 16th index is for 'Contribution (2029) (1st half)'
+            case 17: // Assuming 17th index is for 'Contribution (2029) (2nd half)'
+            case 18: // Assuming 18th index is for 'Contribution (2029) (Overall)'
+            case 19: // Assuming 19th index is for 'Contribution (2030) (1st half)'
+            case 20: // Assuming 20th index is for 'Contribution (2030) (2nd half)'
+            case 21: // Assuming 21st index is for 'Contribution (2030) (Overall)'
+            
+                htmlContent = `<input type="number" placeholder="Enter amount">`;
+                break;
+            default:
+                htmlContent = `<input type="number" placeholder="Enter value">`; // Default text input for other cells
+                break;
+        }
+        newCell.innerHTML = htmlContent;
+    }
+}
+
+
+function applyMultipliers() {
+    const table = document.getElementById('excelTable');
+    const multipliers = collectMultipliers();
+
+    for (const year in multipliers) {
+        const currentYear = parseInt(year);
+        const nextYear = currentYear + 1;
+        const multiplier = multipliers[year];
+
+        for (const suffix of ['(1st half)', '(2nd half)', '(Overall)']) {
+            const currentColHeader = `Contribution (${currentYear}) ${suffix}`;
+            const nextColHeader = `Contribution (${nextYear}) ${suffix}`;
+
+            const currentColIndex = Array.from(table.rows[0].cells).findIndex(cell => cell.innerText === currentColHeader);
+            const nextColIndex = Array.from(table.rows[0].cells).findIndex(cell => cell.innerText === nextColHeader);
+
+            if (currentColIndex >= 0 && nextColIndex >= 0) {
+                for (let row of table.rows) {
+                    const currentCell = row.cells[currentColIndex];
+                    const nextCell = row.cells[nextColIndex];
+
+                    if (currentCell && nextCell && !isNaN(currentCell.innerText) && currentCell.innerText !== '') {
+                        nextCell.innerText = parseFloat(currentCell.innerText) * multiplier;
+                    }
+                }
+            }
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', (event) => {
+    const table = document.getElementById('excelTable');
+    if (table) {
+        table.addEventListener('click', function(e) {
+            const target = e.target;
+            if (target.matches('.non-editable') || target.getAttribute('contenteditable') === 'false') {
+                e.preventDefault(); // Prevent default action
+                return false; // Stop further handling
+            }
+        });
+
+        table.addEventListener('keydown', function(e) {
+            const target = e.target;
+            if (target.matches('.non-editable') || target.getAttribute('contenteditable') === 'false') {
+                e.preventDefault(); // Prevent typing
+                return false; // Stop further handling
+            }
+        });
+    }
+});
+
+document.addEventListener("DOMContentLoaded", function() {
+    // Function to add the first-column class and target the top-left cell
+    const applyColumnClasses = () => {
+        document.querySelectorAll("table tbody tr").forEach(function(row) {
+            var firstCell = row.cells[0];
+            if (firstCell) {
+                firstCell.classList.add("first-column");
+            }
+        });
+        // Target the top-left cell specifically
+        var topLeftCell = document.querySelector("table th:first-child");
+        if (        topLeftCell) {
+            topLeftCell.classList.add("sticky-top-left");
+        }
+    };
+
+    // Function to filter/search the table rows based on input
+    const searchTable = () => {
+        var input, filter, table, tr, td, i, txtValue;
+        input = document.getElementById("searchInput");
+        filter = input.value.toUpperCase();
+        table = document.querySelector("table");
+        tr = table.getElementsByTagName("tr");
+        for (i = 1; i < tr.length; i++) { // Start from 1 to skip header row
+            td = tr[i].getElementsByTagName("td")[0]; // Adjust based on which column you're targeting
+            if (td) {
+                txtValue = td.textContent || td.innerText;
+                if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                    tr[i].style.display = "";
+                } else {
+                    tr[i].style.display = "none";
+                }
+            }
+        }
+    };
+
+    // Assign the searchTable function to the search input's onkeyup event
+    const searchInput = document.getElementById("searchInput");
+    if (searchInput) {
+        searchInput.onkeyup = searchTable;
+    }
+
+    // Apply column classes
+    applyColumnClasses();
+});
+</script>
+
+</body>
+</html>
+
