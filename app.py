@@ -18,7 +18,6 @@ import numpy as np
 app = Flask(__name__)
 app.secret_key = 'your_very_secret_key'  # Set to a random secret value
 
-# Configuration for file uploads
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'xlsx', 'xls','txt'}
 if not os.path.exists(UPLOAD_FOLDER):
