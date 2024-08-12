@@ -16,7 +16,7 @@ import shutil
 import numpy as np
 
 app = Flask(__name__)
-app.secret_key = 'your_very_secret_key'  # Set to a random secret value
+app.secret_key = os.environ.get('SECRET_KEY', 'mcb01')  # Replace 'default_secret_key' with a fallback
 
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'xlsx', 'xls','txt'}
