@@ -2,7 +2,7 @@
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 # More info on Python, GitHub Actions, and Azure App Service: https://aka.ms/python-webapps-actions
 
-name: Build and deploy Python app to Azure Web App - flask-app-mcb
+name: Build and deploy Python app to Azure Web App - my-flask-dashboard
 
 on:
   push:
@@ -65,15 +65,14 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_637E08384A6B43F0AB9D7A7B098520F3 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_B75A4CAAA92046FDA92431596790DECC }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_8C30BCB20D354CF396C0E2EC0346DA8F }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_67D8623CDCA44142992B3A230756B720 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_6DA753BCDE9F4FCEBA001267915BABCA }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_D8D2ADB2D0B8458F9C202AE092D0C062 }}
 
       - name: 'Deploy to Azure Web App'
         uses: azure/webapps-deploy@v3
         id: deploy-to-webapp
         with:
-          app-name: 'flask-app-mcb'
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          app-name: 'my-flask-dashboard'
           slot-name: 'Production'
           
